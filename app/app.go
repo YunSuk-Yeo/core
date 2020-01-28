@@ -34,6 +34,7 @@ import (
 	"github.com/terra-project/core/x/staking"
 	"github.com/terra-project/core/x/supply"
 	"github.com/terra-project/core/x/treasury"
+	"github.com/terra-project/core/x/wasm"
 )
 
 const appName = "TerraApp"
@@ -63,6 +64,7 @@ var (
 		oracle.AppModuleBasic{},
 		market.AppModuleBasic{},
 		treasury.AppModuleBasic{},
+		wasm.AppModuleBasic{},
 	)
 
 	// module account permissions
@@ -112,6 +114,7 @@ type TerraApp struct {
 	paramsKeeper   params.Keeper
 	marketKeeper   market.Keeper
 	treasuryKeeper treasury.Keeper
+	wasmKeeper     wasm.Keeper
 
 	// the module manager
 	mm *module.Manager
@@ -131,7 +134,7 @@ func NewTerraApp(logger log.Logger, db dbm.DB, traceStore io.Writer, loadLatest 
 		bam.MainStoreKey, auth.StoreKey, staking.StoreKey,
 		supply.StoreKey, distr.StoreKey, slashing.StoreKey,
 		gov.StoreKey, params.StoreKey, oracle.StoreKey,
-		market.StoreKey, treasury.StoreKey,
+		market.StoreKey, treasury.StoreKey, wasm.StoreKey,
 	)
 	tkeys := sdk.NewTransientStoreKeys(staking.TStoreKey, params.TStoreKey)
 
@@ -155,6 +158,7 @@ func NewTerraApp(logger log.Logger, db dbm.DB, traceStore io.Writer, loadLatest 
 	oracleSubspace := app.paramsKeeper.Subspace(oracle.DefaultParamspace)
 	marketSubspace := app.paramsKeeper.Subspace(market.DefaultParamspace)
 	treasurySubspace := app.paramsKeeper.Subspace(treasury.DefaultParamspace)
+	wasmSubspace := app.paramsKeeper.Subspace(wasm.DefaultParamspace)
 
 	// add keepers
 	app.accountKeeper = auth.NewAccountKeeper(app.cdc, keys[auth.StoreKey], authSubspace, auth.ProtoBaseAccount)
@@ -176,6 +180,8 @@ func NewTerraApp(logger log.Logger, db dbm.DB, traceStore io.Writer, loadLatest 
 	app.treasuryKeeper = treasury.NewKeeper(app.cdc, keys[treasury.StoreKey], treasurySubspace,
 		app.supplyKeeper, app.marketKeeper, &stakingKeeper, app.distrKeeper,
 		oracle.ModuleName, distr.ModuleName, treasury.DefaultCodespace)
+
+	app.wasmKeeper = wasm.NewKeeper(app.cdc, keys[wasm.StoreKey], wasmSubspace, app.accountKeeper, app.bankKeeper, bApp.Router(), 3000000)
 
 	// register the proposal types
 	govRouter := gov.NewRouter()
@@ -205,6 +211,7 @@ func NewTerraApp(logger log.Logger, db dbm.DB, traceStore io.Writer, loadLatest 
 		market.NewAppModule(app.marketKeeper),
 		oracle.NewAppModule(app.oracleKeeper),
 		treasury.NewAppModule(app.treasuryKeeper),
+		wasm.NewAppModule(app.wasmKeeper),
 	)
 
 	// During begin block slashing happens after distr.BeginBlocker so that
@@ -220,7 +227,7 @@ func NewTerraApp(logger log.Logger, db dbm.DB, traceStore io.Writer, loadLatest 
 	app.mm.SetOrderInitGenesis(genaccounts.ModuleName, distr.ModuleName,
 		staking.ModuleName, auth.ModuleName, bank.ModuleName, slashing.ModuleName,
 		supply.ModuleName, oracle.ModuleName, treasury.ModuleName, gov.ModuleName,
-		market.ModuleName, crisis.ModuleName, genutil.ModuleName)
+		market.ModuleName, wasm.ModuleName, crisis.ModuleName, genutil.ModuleName)
 
 	app.mm.RegisterInvariants(&app.crisisKeeper)
 	app.mm.RegisterRoutes(app.Router(), app.QueryRouter())
