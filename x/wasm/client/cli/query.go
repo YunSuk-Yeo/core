@@ -189,10 +189,10 @@ func GetCmdGetMsg(cdc *codec.Codec) *cobra.Command {
 // GetCmdGetStore dumps full internal state of a given contract
 func GetCmdGetStore(cdc *codec.Codec) *cobra.Command {
 	return &cobra.Command{
-		Use:   "store [bech32-address] [key]",
+		Use:   "store [bech32-address] [key] [subkey]",
 		Short: "Prints out internal state of a contract given its address with key string",
 		Long:  "Prints out internal state of a contract given its address with key string",
-		Args:  cobra.ExactArgs(2),
+		Args:  cobra.RangeArgs(2, 3),
 		RunE: func(cmd *cobra.Command, args []string) error {
 			cliCtx := context.NewCLIContext().WithCodec(cdc)
 
@@ -203,8 +203,13 @@ func GetCmdGetStore(cdc *codec.Codec) *cobra.Command {
 
 			// need to extend key with prefix of its length
 			key := args[1]
+			subkey := ""
+			if len(args) == 3 {
+				subkey = args[2]
+			}
 
-			params := types.NewQueryStoreParams(addr, utils.EncodeKey(key))
+			keyBz := append(utils.EncodeKey(key), []byte(subkey)...)
+			params := types.NewQueryStoreParams(addr, keyBz)
 			bz, err := cliCtx.Codec.MarshalJSON(params)
 			if err != nil {
 				return err
@@ -217,7 +222,7 @@ func GetCmdGetStore(cdc *codec.Codec) *cobra.Command {
 			}
 
 			model := types.Model{
-				Key:   key,
+				Key:   string(keyBz),
 				Value: string(res),
 			}
 

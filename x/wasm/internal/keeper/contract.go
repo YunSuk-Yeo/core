@@ -207,7 +207,7 @@ func addrFromUint64(id uint64) sdk.AccAddress {
 	return sdk.AccAddress(crypto.AddressHash(addr))
 }
 
-func (k Keeper) queryToStore(ctx sdk.Context, contractAddress sdk.AccAddress, key []byte) (result []types.Model) {
+func (k Keeper) queryToStore(ctx sdk.Context, contractAddress sdk.AccAddress, key []byte) (result []byte) {
 	if key == nil {
 		return result
 	}
@@ -215,12 +215,7 @@ func (k Keeper) queryToStore(ctx sdk.Context, contractAddress sdk.AccAddress, ke
 	prefixStoreKey := types.GetContractStoreKey(contractAddress)
 	prefixStore := prefix.NewStore(ctx.KVStore(k.storeKey), prefixStoreKey)
 
-	if val := prefixStore.Get(key); val != nil {
-		result = append(result, types.Model{
-			Key:   string(key),
-			Value: string(val),
-		})
-	}
+	result = prefixStore.Get(key)
 
 	return
 }

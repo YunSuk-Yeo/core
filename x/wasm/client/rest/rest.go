@@ -10,6 +10,7 @@ const (
 	RestCodeID          = "code_id"
 	RestContractAddress = "contract_address"
 	RestKey             = "key"
+	RestSubkey          = "subkey"
 	RestMsg             = "msg"
 )
 

@@ -20,6 +20,7 @@ func registerQueryRoutes(cliCtx context.CLIContext, r *mux.Router) {
 	r.HandleFunc(fmt.Sprintf("/wasm/contract/{%s}", RestContractAddress), queryContractInfoHandlerFn(cliCtx)).Methods("GET")
 	r.HandleFunc(fmt.Sprintf("/wasm/contract/{%s}/msg/{%s}", RestContractAddress, RestMsg), queryContractStateSmartHandlerFn(cliCtx)).Methods("GET")
 	r.HandleFunc(fmt.Sprintf("/wasm/contract/{%s}/store/{%s}", RestContractAddress, RestKey), queryContractStateRawHandlerFn(cliCtx)).Methods("GET")
+	r.HandleFunc(fmt.Sprintf("/wasm/contract/{%s}/store/{%s}/{%s}", RestContractAddress, RestKey, RestSubkey), queryContractStateRawHandlerFn(cliCtx)).Methods("GET")
 }
 
 func queryCodeInfoHandlerFn(cliCtx context.CLIContext) http.HandlerFunc {
@@ -136,6 +137,7 @@ func queryContractStateRawHandlerFn(cliCtx context.CLIContext) http.HandlerFunc 
 		vars := mux.Vars(r)
 		contractAddrStr := vars[RestContractAddress]
 		key := vars[RestKey]
+		subkey := vars[RestSubkey]
 
 		addr, err := sdk.AccAddressFromBech32(contractAddrStr)
 		if err != nil {
@@ -143,7 +145,8 @@ func queryContractStateRawHandlerFn(cliCtx context.CLIContext) http.HandlerFunc 
 			return
 		}
 
-		params := types.NewQueryStoreParams(addr, utils.EncodeKey(key))
+		keyBz := append(utils.EncodeKey(key), []byte(subkey)...)
+		params := types.NewQueryStoreParams(addr, keyBz)
 		bz, err := cliCtx.Codec.MarshalJSON(params)
 		if err != nil {
 			rest.WriteErrorResponse(w, http.StatusInternalServerError, err.Error())
@@ -158,7 +161,7 @@ func queryContractStateRawHandlerFn(cliCtx context.CLIContext) http.HandlerFunc 
 		}
 
 		model := types.Model{
-			Key:   key,
+			Key:   string(keyBz),
 			Value: string(res),
 		}
 

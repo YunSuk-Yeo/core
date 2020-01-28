@@ -96,8 +96,8 @@ func queryStore(ctx sdk.Context, req abci.RequestQuery, keeper Keeper) ([]byte, 
 		return nil, sdk.ErrUnknownRequest(err.Error())
 	}
 
-	models := keeper.queryToStore(ctx, params.ContractAddress, params.Key)
-	bz, err := codec.MarshalJSONIndent(keeper.cdc, models)
+	res := keeper.queryToStore(ctx, params.ContractAddress, params.Key)
+	bz, err := codec.MarshalJSONIndent(keeper.cdc, res)
 	if err != nil {
 		return nil, sdk.ErrUnknownRequest(err.Error())
 	}
