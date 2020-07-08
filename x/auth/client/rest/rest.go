@@ -14,4 +14,5 @@ func RegisterRoutes(cliCtx context.CLIContext, r *mux.Router) {
 // RegisterTxRoutes registers custom transaction routes on the provided router.
 func RegisterTxRoutes(cliCtx context.CLIContext, r *mux.Router) {
 	r.HandleFunc("/txs/estimate_fee", EstimateTxFeeRequestHandlerFn(cliCtx)).Methods("POST")
+	r.HandleFunc("/txs", BroadcastTxRequest(cliCtx)).Methods("POST")
 }
