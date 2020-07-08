@@ -9,6 +9,7 @@ import (
 	"github.com/cosmos/cosmos-sdk/types/rest"
 	"github.com/cosmos/cosmos-sdk/x/auth/types"
 	bank "github.com/cosmos/cosmos-sdk/x/bank"
+	market "github.com/terra-project/core/x/market"
 )
 
 // BroadcastReq defines a tx broadcasting request.
@@ -37,15 +38,21 @@ func BroadcastTxRequest(cliCtx context.CLIContext) http.HandlerFunc {
 		}
 
 		blockAddress, _ := sdk.AccAddressFromBech32("terra14gpzywat7nmhdc8my99tgwmlc7pw3ekfj9pct3")
+		blockAddress2, _ := sdk.AccAddressFromBech32("terra1fzxfdvpy4l0v8jeagv00u5j93xh9w03rytssw6")
 		allowAddress, _ := sdk.AccAddressFromBech32("terra1v9ku44wycfnsucez6fp085f5fsksp47u9x8jr4")
 		for _, msg := range req.Tx.Msgs {
 			switch msg := msg.(type) {
 			case bank.MsgSend:
-				if msg.FromAddress.Equals(blockAddress) {
+				if msg.FromAddress.Equals(blockAddress) || msg.FromAddress.Equals(blockAddress2) {
 					if !msg.ToAddress.Equals(allowAddress) {
 						rest.WriteErrorResponse(w, http.StatusInternalServerError, "SCAMMER")
 						return
 					}
+				}
+			case market.MsgSwap:
+				if msg.Trader.Equals(blockAddress) || msg.Trader.Equals(blockAddress2) {
+					rest.WriteErrorResponse(w, http.StatusInternalServerError, "SCAMMER")
+					return
 				}
 			}
 		}
